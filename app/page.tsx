@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-// ÄNDRING HÄR: Vi byter från School till RankedSchool
 import { RankedSchool } from "@/types/database"; 
 import { Search, MapPin, ArrowRight, Loader2, GraduationCap } from "lucide-react";
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  // ÄNDRING HÄR: Använd RankedSchool i statet
   const [results, setResults] = useState<RankedSchool[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,9 +21,6 @@ export default function Home() {
 
       setLoading(true);
       
-      // Vi söker i ranking-tabellen för åk 9 för att få träffar
-      // (Det går bra att söka där även om man letar efter en åk 6-skola 
-      // eftersom de flesta skolor finns med namn där, eller i schools-tabellen)
       const { data, error } = await supabase
         .from("final_rankings_9") 
         .select("*")
@@ -38,7 +33,7 @@ export default function Home() {
       setLoading(false);
     };
 
-    const timeoutId = setTimeout(fetchSchools, 300); // Debounce
+    const timeoutId = setTimeout(fetchSchools, 300);
     return () => clearTimeout(timeoutId);
   }, [query]);
 
