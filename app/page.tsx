@@ -6,12 +6,13 @@ import Link from "next/link";
 import { RankedSchool } from "@/types/database"; 
 import { Search, MapPin, ArrowRight, Loader2, GraduationCap } from "lucide-react";
 
+// OBS: Inga 'export const revalidate' eller 'export const metadata' här!
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<RankedSchool[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Sök-funktion
   useEffect(() => {
     const fetchSchools = async () => {
       if (query.length < 2) {
@@ -55,7 +56,6 @@ export default function Home() {
           Hitta och jämför Sveriges grundskolor baserat på betyg, trygghet och lärarbehörighet.
         </p>
 
-        {/* SÖKFÄLT */}
         <div className="relative max-w-lg mx-auto w-full">
           <div className="relative">
             <input
@@ -73,7 +73,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* SÖKRESULTAT DROPDOWN */}
           {results.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 text-left">
               {results.map((school) => (
@@ -100,7 +99,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* LÄNKAR */}
         <div className="mt-16 flex flex-wrap justify-center gap-4 text-sm font-bold text-gray-500">
             <Link href="/topplistan" className="hover:text-blue-600 transition-colors">🏆 Topplistan</Link>
             <span>•</span>
