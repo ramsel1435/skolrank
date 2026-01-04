@@ -3,70 +3,117 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { School } from "@/types/database";
-import { Search } from "lucide-react";
+// ÄNDRING HÄR: Vi byter från School till RankedSchool
+import { RankedSchool } from "@/types/database"; 
+import { Search, MapPin, ArrowRight, Loader2, GraduationCap } from "lucide-react";
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [schools, setSchools] = useState<School[]>([]);
+  // ÄNDRING HÄR: Använd RankedSchool i statet
+  const [results, setResults] = useState<RankedSchool[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Sök-funktion
   useEffect(() => {
     const fetchSchools = async () => {
-      if (query.length < 2) return;
+      if (query.length < 2) {
+        setResults([]);
+        return;
+      }
+
       setLoading(true);
-
+      
+      // Vi söker i ranking-tabellen för åk 9 för att få träffar
+      // (Det går bra att söka där även om man letar efter en åk 6-skola 
+      // eftersom de flesta skolor finns med namn där, eller i schools-tabellen)
       const { data, error } = await supabase
-        .from("schools")
-        .select("school_unit_code, name, municipality_name")
+        .from("final_rankings_9") 
+        .select("*")
         .ilike("name", `%${query}%`)
-        .limit(10);
+        .limit(5);
 
-      if (!error && data) setSchools(data);
+      if (!error && data) {
+        setResults(data);
+      }
       setLoading(false);
     };
 
-    const timer = setTimeout(fetchSchools, 300);
-    return () => clearTimeout(timer);
+    const timeoutId = setTimeout(fetchSchools, 300); // Debounce
+    return () => clearTimeout(timeoutId);
   }, [query]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-50 text-black">
-      <div className="text-center mb-10">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">Skolrank 🎓</h1>
-        <p className="text-xl text-gray-600">Sveriges öppna skoldata.</p>
-      </div>
-
-      <div className="w-full max-w-xl relative">
-        <div className="relative">
-          <Search className="absolute left-4 top-3.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Sök skola (t.ex. Adolf Fredrik...)"
-            className="w-full p-4 pl-12 rounded-xl border border-gray-200 shadow-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-blue-50 to-white">
+      
+      <div className="text-center max-w-2xl w-full">
+        <div className="mb-6 flex justify-center">
+            <div className="p-4 bg-blue-600 rounded-full shadow-xl">
+                <GraduationCap className="w-12 h-12 text-white" />
+            </div>
         </div>
+        
+        <h1 className="text-4xl md:text-6xl font-black text-blue-900 mb-6 tracking-tight">
+          Skolrank
+        </h1>
+        
+        <p className="text-xl text-gray-600 mb-12">
+          Hitta och jämför Sveriges grundskolor baserat på betyg, trygghet och lärarbehörighet.
+        </p>
 
-        {(schools.length > 0 || loading) && query.length >= 2 && (
-          <div className="absolute w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10">
-            {loading ? (
-              <div className="p-4 text-gray-500">Laddar...</div>
-            ) : (
-              schools.map((school) => (
+        {/* SÖKFÄLT */}
+        <div className="relative max-w-lg mx-auto w-full">
+          <div className="relative">
+            <input
+              type="text"
+              className="w-full p-4 pl-12 rounded-2xl border-2 border-blue-100 shadow-lg focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
+              placeholder="Sök på din skola..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <Search className="absolute left-4 top-5 text-blue-400 w-6 h-6" />
+            {loading && (
+                <div className="absolute right-4 top-5">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                </div>
+            )}
+          </div>
+
+          {/* SÖKRESULTAT DROPDOWN */}
+          {results.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 text-left">
+              {results.map((school) => (
                 <Link
                   key={school.school_unit_code}
                   href={`/skola/${school.school_unit_code}`}
-                  className="block p-4 hover:bg-blue-50 border-b border-gray-50 last:border-none transition-colors"
+                  className="block p-4 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0 group"
                 >
-                  <p className="font-bold text-gray-900">{school.name}</p>
-                  <p className="text-sm text-gray-500">{school.municipality_name}</p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="font-bold text-gray-900 group-hover:text-blue-700">
+                        {school.name}
+                      </div>
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <MapPin className="w-3 h-3" />
+                        {school.municipality_name}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500" />
+                  </div>
                 </Link>
-              ))
-            )}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* LÄNKAR */}
+        <div className="mt-16 flex flex-wrap justify-center gap-4 text-sm font-bold text-gray-500">
+            <Link href="/topplistan" className="hover:text-blue-600 transition-colors">🏆 Topplistan</Link>
+            <span>•</span>
+            <Link href="/huvudman" className="hover:text-blue-600 transition-colors">🏢 Bästa Huvudmän</Link>
+            <span>•</span>
+            <Link href="/metod" className="hover:text-blue-600 transition-colors">📊 Vår Metod</Link>
+        </div>
+
       </div>
     </main>
   );
